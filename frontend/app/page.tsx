@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { supabase } from "@/supabaseClient";
 import {
   LiveKitRoom,
@@ -9,7 +9,7 @@ import {
 import "@livekit/components-styles";
 import { useSearchParams } from 'next/navigation';
 
-export default function Home() {
+function AnaUygulama() {
   const searchParams = useSearchParams();
   const urlRoomName = searchParams.get("room") || "";
 
@@ -347,5 +347,13 @@ export default function Home() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">Yükleniyor...</div>}>
+      <AnaUygulama />
+    </Suspense>
   );
 }
