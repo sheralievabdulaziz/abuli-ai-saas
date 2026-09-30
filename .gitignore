@@ -1,0 +1,12 @@
+# Node.js / Next.js
+node_modules/
+.next/
+
+# Python / FastAPI
+__pycache__/
+venv/
+env/
+
+# Çevresel Değişkenler ve API Anahtarları
+.env
+.env.local

@@ -1,0 +1,10 @@
+Peri: İyi deneme, ses,
+Peri: Merhaba.
+Peri: Nasılsınız?
+Peri: Benim adım Perizat.
+Peri: Bugünkü toplantıyı başlatıyoruz. Toplantımız
+Peri: AI destekli
+Peri: toplantı uygulaması hakkında olacak?
+Peri: Bu uygulamayı biz geliştiriyoruz.
+Peri: Ve bitimine çok az kalmıştır.
+Peri: Bugünlük bilgi bu kadar. Teşekkür ederim.
