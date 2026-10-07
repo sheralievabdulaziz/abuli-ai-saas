@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 from fpdf import FPDF
 from supabase import create_client, Client
 from pydantic import BaseModel
+from livekit import api
 
 class ChatRequest(BaseModel):
     soru: str
@@ -76,6 +77,7 @@ async def ask_abuli(request: ChatRequest):
         traceback.print_exc()
         return {"cevap": f"Bir hata oluştu: {str(e)}"}
 
+
 class AccessRequest(BaseModel):
     oda_adi: str
     katilimci_adi: str
@@ -97,11 +99,15 @@ class ApproveRequest(BaseModel):
 
 @app.post("/approve-access")
 async def approve_access(req: ApproveRequest):
-    token = await get_token(req.oda_adi, req.katilimci_adi) 
+    token = api.AccessToken(os.environ.get("LIVEKIT_API_KEY"), os.environ.get("LIVEKIT_API_SECRET")) \
+        .with_identity(req.katilimci_adi) \
+        .with_name(req.katilimci_adi) \
+        .with_grants(api.VideoGrants(room_join=True, room=req.oda_adi)) \
+        .to_jwt()
     
     supabase_client.table("bekleme_odasi").update({
         "durum": "onaylandi",
-        "token": token["token"]
+        "token": token
     }).eq("id", req.request_id).execute()
     
     return {"mesaj": "Onaylandı"}
