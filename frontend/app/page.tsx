@@ -33,6 +33,8 @@ function AnaUygulama() {
   const [isWaitingForApproval, setIsWaitingForApproval] = useState(false);
   const [myRequestId, setMyRequestId] = useState<string | null>(null);
 
+  const [isHost, setIsHost] = useState(false);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -118,11 +120,25 @@ function AnaUygulama() {
   };
 
   const joinAsHost = async () => {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/get-token?room_name=${roomName}&participant_name=${participantName}`
-    );
-    const data = await response.json();
-    setToken(data.token);
+    const password = prompt("Odayı başlatmak için Admin şifresini girin:");
+    
+    if (password !== "abuli2026") {
+      alert("Hatalı şifre! Sadece admin toplantı başlatabilir.");
+      return;
+    }
+
+    setIsHost(true);
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/get-token?room_name=${roomName}&participant_name=${participantName}`
+      );
+      const data = await response.json();
+      setToken(data.token);
+    } catch (error) {
+      console.error("Sunucu hatası:", error);
+      alert("Toplantı başlatılamadı, lütfen sunucu bağlantısını kontrol edin.");
+    }
   };
 
   const approveAccess = async (requestId: string, guestName: string) => {
@@ -291,12 +307,14 @@ function AnaUygulama() {
       <div className="flex flex-col h-screen bg-gray-950">
         <div className="p-4 bg-gray-900 flex justify-end gap-4 border-b border-gray-800 shadow-md z-10">
         
+          {isHost && (
           <button 
             onClick={copyInviteLink}
             className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2"
           >
             🔗 Davet Linkini Kopyala
           </button>
+          )}
 
           <button 
             onClick={fetchSummary}
