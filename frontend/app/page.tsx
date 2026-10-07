@@ -29,6 +29,10 @@ function AnaUygulama() {
   const [chatResponse, setChatResponse] = useState("");
   const [isAsking, setIsAsking] = useState(false);
 
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [isWaitingForApproval, setIsWaitingForApproval] = useState(false);
+  const [myRequestId, setMyRequestId] = useState<string | null>(null);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -40,6 +44,51 @@ function AnaUygulama() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!myRequestId) return;
+    
+    const channel = supabase
+      .channel('guest_wait')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bekleme_odasi', filter: `id=eq.${myRequestId}` },
+        (payload) => {
+          if (payload.new.durum === 'onaylandi' && payload.new.token) {
+            setToken(payload.new.token);
+            setIsWaitingForApproval(false);
+          } else if (payload.new.durum === 'reddedildi') {
+            alert("Toplantı sahibi katılım isteğinizi reddetti.");
+            setIsWaitingForApproval(false);
+          }
+        }
+      ).subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [myRequestId]);
+
+  useEffect(() => {
+    if (!token) return; 
+
+    const fetchPending = async () => {
+       const { data } = await supabase.from('bekleme_odasi').select('*').eq('oda_adi', roomName).eq('durum', 'bekliyor');
+       if (data) setPendingRequests(data);
+    };
+    fetchPending();
+
+    const channel = supabase
+      .channel('host_listen')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bekleme_odasi', filter: `oda_adi=eq.${roomName}` },
+        (payload) => setPendingRequests((prev) => [...prev, payload.new])
+      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bekleme_odasi', filter: `oda_adi=eq.${roomName}` },
+        (payload) => {
+          if (payload.new.durum !== 'bekliyor') {
+            setPendingRequests((prev) => prev.filter(r => r.id !== payload.new.id));
+          }
+        }
+      ).subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [token, roomName]);
 
   const handleAuth = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -57,12 +106,35 @@ function AnaUygulama() {
     await supabase.auth.signOut();
   };
 
-  const joinRoom = async () => {
+  const joinAsGuest = async () => {
+    setIsWaitingForApproval(true);
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/request-access`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ oda_adi: roomName, katilimci_adi: participantName })
+    });
+    const data = await res.json();
+    setMyRequestId(data.request_id);
+  };
+
+  const joinAsHost = async () => {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/get-token?room_name=${roomName}&participant_name=${participantName}`
     );
     const data = await response.json();
     setToken(data.token);
+  };
+
+  const approveAccess = async (requestId: string, guestName: string) => {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/approve-access`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ request_id: requestId, oda_adi: roomName, katilimci_adi: guestName })
+    });
+  };
+
+  const rejectAccess = async (requestId: string) => {
+    await supabase.from('bekleme_odasi').update({ durum: 'reddedildi' }).eq('id', requestId);
   };
 
   const fetchSummary = async () => {
@@ -186,63 +258,54 @@ function AnaUygulama() {
     );
   }
 
-  if (token === "") {
+  if (isWaitingForApproval) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-gray-900 text-white relative">
-        
-        <div className="absolute top-4 right-4 z-50">
-          <span className="text-white mr-4 text-sm">{session.user.email}</span>
-          <button onClick={handleLogout} className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-500">
-            Çıkış Yap
-          </button>
-        </div>
-
-        <h1 className="text-3xl font-bold">AI Destekli Toplantı</h1>
-        <input
-          type="text"
-          placeholder="Oda Adı"
-          className="border p-2 rounded text-black w-64"
-          value={roomName}
-          onChange={(e) => setRoomName(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Adınız"
-          className="border p-2 rounded text-black w-64"
-          value={participantName}
-          onChange={(e) => setParticipantName(e.target.value)}
-        />
-        <button onClick={joinRoom} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded w-64">
-          Odaya Katıl
-        </button>
-
-        {roomName.trim() !== "" && (
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              copyInviteLink();
-            }}
-            type="button"
-            className="w-full max-w-xs mt-3 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all"
-          >
-            🔗 Toplantı Linkini Kopyala
-          </button>
-        )}
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+        <h2 className="text-xl font-bold">Toplantı sahibinin onayı bekleniyor...</h2>
+        <p className="text-gray-400 mt-2">Lütfen ekrandan ayrılmayın.</p>
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-col h-screen bg-gray-950">
-      <div className="p-4 bg-gray-900 flex justify-end border-b border-gray-800 shadow-md z-10">
-        <button 
-          onClick={fetchSummary}
-          disabled={isSummarizing}
-          className="bg-green-600 hover:bg-green-500 disabled:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg transition-colors"
-        >
-          {isSummarizing ? "Gemini Özeti Hazırlıyor..." : "Toplantı Özetini Çıkar"}
-        </button>
+  if (token === "") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-gray-900 text-white relative">
+        <h1 className="text-3xl font-bold">AI Destekli Toplantı</h1>
+        <input type="text" placeholder="Oda Adı" className="border p-2 rounded text-black w-64" value={roomName} onChange={(e) => setRoomName(e.target.value)} />
+        <input type="text" placeholder="Adınız" className="border p-2 rounded text-black w-64" value={participantName} onChange={(e) => setParticipantName(e.target.value)} />
+        
+        <div className="flex gap-2 w-64">
+          <button onClick={joinAsHost} className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-2 rounded w-full text-sm">
+            Sahip Olarak Gir
+          </button>
+          <button onClick={joinAsGuest} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-2 rounded w-full text-sm">
+            Misafir Katıl
+          </button>
+        </div>
       </div>
+    );
+  }
+
+    return (
+      <div className="flex flex-col h-screen bg-gray-950">
+        <div className="p-4 bg-gray-900 flex justify-end gap-4 border-b border-gray-800 shadow-md z-10">
+        
+          <button 
+            onClick={copyInviteLink}
+            className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2"
+          >
+            🔗 Davet Linkini Kopyala
+          </button>
+
+          <button 
+            onClick={fetchSummary}
+            disabled={isSummarizing}
+            className="bg-green-600 hover:bg-green-500 disabled:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+          >
+            {isSummarizing ? "Gemini Özeti Hazırlıyor..." : "Toplantı Özetini Çıkar"}
+          </button>
+        </div>
 
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-grow relative border-r border-gray-700">
@@ -261,6 +324,25 @@ function AnaUygulama() {
 
         <div className="w-[400px] bg-gray-800 flex flex-col shadow-2xl z-10 overflow-hidden text-white">
           
+          {pendingRequests.length > 0 && (
+            <div className="m-5 bg-orange-900 p-4 rounded-lg border border-orange-700 shadow-lg">
+              <h3 className="text-md font-bold text-orange-400 mb-3 flex items-center gap-2">
+                Kapıda Bekleyenler ({pendingRequests.length})
+              </h3>
+              <ul className="space-y-3">
+                {pendingRequests.map((req) => (
+                  <li key={req.id} className="flex items-center justify-between text-sm text-white bg-orange-950 p-2 rounded">
+                    <span className="font-semibold">{req.katilimci_adi}</span>
+                    <div className="flex gap-2">
+                      <button onClick={() => approveAccess(req.id, req.katilimci_adi)} className="bg-green-600 px-3 py-1 rounded hover:bg-green-500 font-bold transition">Al</button>
+                      <button onClick={() => rejectAccess(req.id)} className="bg-red-600 px-3 py-1 rounded hover:bg-red-500 font-bold transition">Reddet</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="p-5 border-b border-gray-700 bg-gray-850">
             <h3 className="text-lg font-bold text-blue-400 mb-3 flex items-center gap-2">
               Abuli-ai Geçmişi Tara
@@ -325,12 +407,6 @@ function AnaUygulama() {
                     className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-4 rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all hover:scale-105 text-sm"
                   >
                     📄 PDF İndir
-                  </button>
-                  <button 
-                    onClick={copyInviteLink}
-                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-lg shadow transition-all text-sm"
-                  >
-                    🔗 Davet Linkini Kopyala
                   </button>
                 </div>
               </>

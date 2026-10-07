@@ -76,6 +76,35 @@ async def ask_abuli(request: ChatRequest):
         traceback.print_exc()
         return {"cevap": f"Bir hata oluştu: {str(e)}"}
 
+class AccessRequest(BaseModel):
+    oda_adi: str
+    katilimci_adi: str
+
+@app.post("/request-access")
+async def request_access(req: AccessRequest):
+    response = supabase_client.table("bekleme_odasi").insert({
+        "oda_adi": req.oda_adi,
+        "katilimci_adi": req.katilimci_adi,
+        "durum": "bekliyor"
+    }).execute()
+    
+    return {"mesaj": "İstek gönderildi", "request_id": response.data[0]["id"]}
+
+class ApproveRequest(BaseModel):
+    request_id: str
+    oda_adi: str
+    katilimci_adi: str
+
+@app.post("/approve-access")
+async def approve_access(req: ApproveRequest):
+    token = await get_token(req.oda_adi, req.katilimci_adi) 
+    
+    supabase_client.table("bekleme_odasi").update({
+        "durum": "onaylandi",
+        "token": token["token"]
+    }).eq("id", req.request_id).execute()
+    
+    return {"mesaj": "Onaylandı"}
 class SummaryRequest(BaseModel):
     filename: str = "ornek_toplanti.wav"
 
