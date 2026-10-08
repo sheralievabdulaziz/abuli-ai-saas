@@ -75,17 +75,19 @@ async def entrypoint(ctx: JobContext):
                 
             tam_metin = "\n".join(toplanti_transkripti)
              
-            veri = {
-                "oda_adi": ctx.room.name,
-                "transkript_metni": tam_metin
-            }
-            supabase.table("toplantilar").insert(veri).execute()
-                
-            print("Transkript Supabase'e kaydedildi!")
+            kontrol = supabase.table("toplantilar").select("id").eq("oda_adi", ctx.room.name).execute()
+            
+            if len(kontrol.data) > 0:
+                supabase.table("toplantilar").update({"transkript_metni": tam_metin}).eq("oda_adi", ctx.room.name).execute()
+                print("Mevcut transkript kaydı güncellendi!")
+            else:
+                veri = {"oda_adi": ctx.room.name, "transkript_metni": tam_metin}
+                supabase.table("toplantilar").insert(veri).execute()
+                print("Transkript Supabase'e başarıyla kaydedildi!")
 
             toplanti_transkripti.clear()
-            asyncio.create_task(ctx.room.disconnect())
-            print("Bot odadan ayrıldı ve bellek temizlendi.")
+            asyncio.create_task(ctx.shutdown())
+            print("Bot odadan ayrıldı.")
 
 if __name__ == "__main__":
     cli.run_app(WorkerOptions(
