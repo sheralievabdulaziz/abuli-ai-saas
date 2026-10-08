@@ -18,10 +18,10 @@ async def request_fnc(req: JobRequest) -> None:
     await req.accept()
 
 async def entrypoint(ctx: JobContext):
-    print(f"Bot '{ctx.room.name}' odasına bağlanıyor...")
+    # print(f"Bot '{ctx.room.name}' odasına bağlanıyor...")
     
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
-    print("Bot odaya katıldı ve dinlemeye hazır!")
+    # print("Bot odaya katıldı ve dinlemeye hazır!")
 
     toplanti_transkripti = []
 
@@ -31,7 +31,7 @@ async def entrypoint(ctx: JobContext):
     def on_track_subscribed(track: rtc.Track, publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
        
         if track.kind == rtc.TrackKind.KIND_AUDIO:
-            print(f"[{participant.identity}] kullanıcısının mikrofonu dinleniyor...")
+            # print(f"[{participant.identity}] kullanıcısının mikrofonu dinleniyor...")
             
             audio_stream = rtc.AudioStream(track)
             stt_stream = dg_stt.stream()
@@ -60,7 +60,7 @@ async def entrypoint(ctx: JobContext):
                                     veri = {"oda_adi": ctx.room.name, "transkript_metni": tam_metin}
                                     supabase.table("toplantilar").insert(veri).execute()
                                     
-                                print(f"[{len(toplanti_transkripti)} cümle] Transkript anlık olarak Supabase'e eşitlendi.")
+                                # print(f"[{len(toplanti_transkripti)} cümle] Transkript anlık olarak Supabase'e eşitlendi.")
 
             asyncio.create_task(forward_audio())
             asyncio.create_task(receive_text())
@@ -68,10 +68,10 @@ async def entrypoint(ctx: JobContext):
     # Odadan biri ayrıldığında tetiklenir
     @ctx.room.on("participant_disconnected")
     def on_participant_disconnected(participant: rtc.RemoteParticipant):
-        print(f"{participant.identity} odadan ayrıldı.")
+        # print(f"{participant.identity} odadan ayrıldı.")
             
         if len(ctx.room.remote_participants) == 0:
-            print("Toplantı bitti! Transkript veritabanına kaydediliyor...")
+            # print("Toplantı bitti! Transkript veritabanına kaydediliyor...")
                 
             tam_metin = "\n".join(toplanti_transkripti)
              
@@ -79,15 +79,15 @@ async def entrypoint(ctx: JobContext):
             
             if len(kontrol.data) > 0:
                 supabase.table("toplantilar").update({"transkript_metni": tam_metin}).eq("oda_adi", ctx.room.name).execute()
-                print("Mevcut transkript kaydı güncellendi!")
+                # print("Mevcut transkript kaydı güncellendi!")
             else:
                 veri = {"oda_adi": ctx.room.name, "transkript_metni": tam_metin}
                 supabase.table("toplantilar").insert(veri).execute()
-                print("Transkript Supabase'e başarıyla kaydedildi!")
+                # print("Transkript Supabase'e başarıyla kaydedildi!")
 
             toplanti_transkripti.clear()
             asyncio.create_task(ctx.shutdown())
-            print("Bot odadan ayrıldı.")
+            # print("Bot odadan ayrıldı.")
 
 if __name__ == "__main__":
     cli.run_app(WorkerOptions(
