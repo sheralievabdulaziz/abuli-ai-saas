@@ -286,18 +286,47 @@ function AnaUygulama() {
 
   if (token === "") {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-gray-900 text-white relative">
-        <h1 className="text-3xl font-bold">AI Destekli Toplantı</h1>
-        <input type="text" placeholder="Oda Adı" className="border p-2 rounded text-black w-64" value={roomName} onChange={(e) => setRoomName(e.target.value)} />
-        <input type="text" placeholder="Adınız" className="border p-2 rounded text-black w-64" value={participantName} onChange={(e) => setParticipantName(e.target.value)} />
-        
-        <div className="flex gap-2 w-64">
-          <button onClick={joinAsHost} className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-2 rounded w-full text-sm">
-            Sahip Olarak Gir
-          </button>
-          <button onClick={joinAsGuest} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-2 rounded w-full text-sm">
-            Misafir Katıl
-          </button>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+        <div className="bg-gray-800 p-8 rounded-2xl shadow-2xl flex flex-col gap-5 w-full max-w-sm border border-gray-700">
+          
+          <div className="text-center mb-2">
+            <h1 className="text-2xl font-extrabold tracking-tight text-white">
+              AI Destekli Toplantı
+            </h1>
+            <p className="text-gray-400 text-sm mt-2">Odaya katılmak için bilgileri girin</p>
+          </div>
+          
+          <input 
+            type="text" 
+            placeholder="Oda Adı" 
+            className="w-full bg-gray-900 border border-gray-600 text-white placeholder-gray-400 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+            value={roomName} 
+            onChange={(e) => setRoomName(e.target.value)} 
+          />
+          
+          <input 
+            type="text" 
+            placeholder="Adınız" 
+            className="w-full bg-gray-900 border border-gray-600 text-white placeholder-gray-400 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+            value={participantName} 
+            onChange={(e) => setParticipantName(e.target.value)} 
+          />
+          
+          <div className="flex gap-3 mt-2">
+            <button 
+              onClick={joinAsHost} 
+              className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-2 rounded-lg text-sm transition-all shadow-lg hover:shadow-green-500/30"
+            >
+              Sahip Olarak Gir
+            </button>
+            <button 
+              onClick={joinAsGuest} 
+              className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-2 rounded-lg text-sm transition-all shadow-lg hover:shadow-blue-500/30"
+            >
+              Misafir Olarak Katıl
+            </button>
+          </div>
+
         </div>
       </div>
     );
