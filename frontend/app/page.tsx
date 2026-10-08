@@ -35,6 +35,8 @@ function AnaUygulama() {
 
   const [isHost, setIsHost] = useState(false);
 
+  const [hasLeft, setHasLeft] = useState(false);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -175,6 +177,12 @@ function AnaUygulama() {
     setIsSummarizing(false);
   };
 
+  const handleDisconnect = () => {
+    setToken("");
+    setIsHost(false);
+    setHasLeft(true);
+  };
+
   const copyInviteLink = () => {
     const inviteUrl = `${window.location.origin}/?room=${roomName}`;
     navigator.clipboard.writeText(inviteUrl);
@@ -284,6 +292,35 @@ function AnaUygulama() {
     );
   }
 
+  if (hasLeft) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+        <div className="bg-gray-800 p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4 text-center border border-gray-700 max-w-sm w-full">
+          
+          <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-2">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+          </div>
+          
+          <h2 className="text-2xl font-bold text-white">Toplantıdan Ayrıldınız</h2>
+          
+          <button 
+            onClick={() => { 
+              setHasLeft(false); 
+              setRoomName(""); 
+              setParticipantName(""); 
+            }} 
+            className="mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-all shadow-lg w-full"
+          >
+            Ana Sayfaya Dön
+          </button>
+          
+        </div>
+      </div>
+    );
+  }
+
   if (token === "") {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
@@ -363,6 +400,7 @@ function AnaUygulama() {
             serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
             data-lk-theme="default"
             style={{ height: '100%', width: '100%' }}
+            onDisconnected={handleDisconnect}
           >
             <VideoConference />
             <RoomAudioRenderer />
