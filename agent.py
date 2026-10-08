@@ -57,7 +57,6 @@ async def entrypoint(ctx: JobContext):
     def on_participant_disconnected(participant: rtc.RemoteParticipant):
         print(f"{participant.identity} odadan ayrıldı.")
             
-            # Eğer odada başka kimse kalmadıysa, toplantı bitmiştir
         if len(ctx.room.remote_participants) == 0:
             print("Toplantı bitti! Transkript veritabanına kaydediliyor...")
                 
@@ -70,6 +69,10 @@ async def entrypoint(ctx: JobContext):
             supabase.table("toplantilar").insert(veri).execute()
                 
             print("Transkript Supabase'e kaydedildi!")
+
+            toplanti_transkripti.clear()
+            asyncio.create_task(ctx.room.disconnect())
+            print("Bot odadan ayrıldı ve bellek temizlendi.")
 
 if __name__ == "__main__":
     cli.run_app(WorkerOptions(
