@@ -67,7 +67,7 @@ async def ask_abuli(request: ChatRequest):
         Kullanıcının Sorusu: {request.soru}
         """
 
-        chat = gemini_client.chats.create(model="gemini-2.0-flash")
+        chat = gemini_client.chats.create(model="gemini-3.8-flash")
         ai_response = chat.send_message(prompt)
         
         return {"cevap": ai_response.text}
@@ -159,7 +159,7 @@ async def generate_summary(request: SummaryRequest):
         {transcript}
         """
         
-        chat = gemini_client.chats.create(model="gemini-2.0-flash")
+        chat = gemini_client.chats.create(model="gemini-3.8-flash")
         ai_response = chat.send_message(prompt)
         
         response_text = ai_response.text.strip()
@@ -215,7 +215,7 @@ async def generate_summary_from_latest():
         """
         
         ai_response = gemini_client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-3.8-flash",
             contents=prompt
         )
         
@@ -264,7 +264,7 @@ async def generate_summary_from_text(request: TextSummaryRequest):
         """
         
         ai_response = gemini_client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-3.8-flash",
             contents=prompt
         )
         
