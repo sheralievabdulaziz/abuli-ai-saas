@@ -49,6 +49,19 @@ async def entrypoint(ctx: JobContext):
                             print(f"{satir}")
                             toplanti_transkripti.append(satir)
 
+                            if len(toplanti_transkripti) % 3 == 0:
+                                tam_metin = "\n".join(toplanti_transkripti)
+                                
+                                kontrol = supabase.table("toplantilar").select("id").eq("oda_adi", ctx.room.name).execute()
+                                
+                                if len(kontrol.data) > 0:
+                                    supabase.table("toplantilar").update({"transkript_metni": tam_metin}).eq("oda_adi", ctx.room.name).execute()
+                                else:
+                                    veri = {"oda_adi": ctx.room.name, "transkript_metni": tam_metin}
+                                    supabase.table("toplantilar").insert(veri).execute()
+                                    
+                                print(f"[{len(toplanti_transkripti)} cümle] Transkript anlık olarak Supabase'e eşitlendi.")
+
             asyncio.create_task(forward_audio())
             asyncio.create_task(receive_text())
 
