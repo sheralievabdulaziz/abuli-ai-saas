@@ -239,7 +239,7 @@ function AnaUygulama() {
     setIsAsking(false);
   };
 
-  if (!session) {
+  if (!session && !urlRoomName) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
         <form onSubmit={handleAuth} className="bg-gray-800 p-8 rounded-lg shadow-xl w-96">
