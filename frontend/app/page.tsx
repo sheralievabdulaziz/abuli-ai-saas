@@ -407,7 +407,7 @@ function AnaUygulama() {
           </LiveKitRoom>
         </div>
 
-        <div className="w-[400px] bg-gray-800 flex flex-col shadow-2xl z-10 overflow-hidden text-white">
+        <div className="w-[400px] bg-gray-800 flex flex-col shadow-2xl z-10 overflow-y-auto text-white">
           
           {pendingRequests.length > 0 && (
             <div className="m-5 bg-orange-900 p-4 rounded-lg border border-orange-700 shadow-lg">
@@ -428,7 +428,7 @@ function AnaUygulama() {
             </div>
           )}
 
-          <div className="p-5 border-b border-gray-700 bg-gray-850">
+          <div className="p-5 border-b border-gray-700 bg-gray-850 shrink-0">
             <h3 className="text-lg font-bold text-blue-400 mb-3 flex items-center gap-2">
               Abuli-ai Geçmişi Tara
             </h3>
@@ -456,7 +456,7 @@ function AnaUygulama() {
             )}
           </div>
 
-          <div className="flex-1 p-5 overflow-y-auto">
+          <div className="p-5">
             {summary ? (
               <>
                 <h2 className="text-xl font-bold mb-5 flex items-center gap-2">
